@@ -1,12 +1,12 @@
 {
-  "name": "Translate chat",
-  "version": "0.0.1",
+  "name": "codeflow-chat",
+  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node entry.js"
   },
   "keywords": [],
-  "author": "Team10",
+  "author": "Dong Wook Kim",
   "license": "ISC",
   "dependencies": {
     "babel": "^6.5.1",
@@ -20,7 +20,7 @@
     "classnames": "^2.2.3",
     "compression": "^1.6.2",
     "css-loader": "^0.28.11",
-    "express": "^4.17.1",
+    "express": "^4.13.4",
     "extract-text-webpack-plugin": "^3.0.2",
     "file-loader": "^0.8.5",
     "less": "^3.0.1",
@@ -42,5 +42,6 @@
     "webpack-dev-middleware": "2.0.6",
     "webpack-dev-server": "^3.1.3",
     "webpack-hot-middleware": "^2.10.0"
-  }
+  },
+  "description": "## Ref - 해설 강의: https://codeflow.study/courses/96 - boilerplate: https://github.com/zckly/MobX-React-Webpack-Express"
 }

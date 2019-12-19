@@ -19,30 +19,30 @@
     <!-- main 컨텐츠 영역 -->
     <main>
         <!-- 유저리스트탭 영역 -->
-        <div id="tab-1" >
-            <ul id="ulUserList" >
+        <div id="tab-1" class="col s12 tabContents">
+            <ul id="ulUserList" class="collection">
             </ul>
         </div>
         <!-- 채팅방리스트탭 영역 -->
-        <div id="tab-2" style="display: none">
-            <ul id="ulRoomList" >
+        <div id="tab-2" class="col s12 tabContents" style="display: none">
+            <ul id="ulRoomList" class="collection">
             </ul>
         </div>
         <!-- 설정탭 영역 -->
-        <div id="tab-3" >
-            <ul class=>
-                <li id="liLogOut" >로그아웃</li>
+        <div id="tab-3" class="col s12 tabContents">
+            <ul class="collection">
+                <li id="liLogOut" class="collection-item">로그아웃</li>
             </ul>
         </div>
         <!-- 채팅방 메세지화면 영역 -->
-        <div id="tab-4" >
-            <ul id="ulMessageList" >
+        <div id="tab-4" class="col s12 tabContents ">
+            <ul id="ulMessageList" class="collection">
             </ul>
-            <div id="dvMsgForm" >
-                <i href="#dvtrans"id="atrans" >g_translate</i>
+            <div id="dvMsgForm" class="meta-bar chat">
+                <i href="#dvtrans"id="atrans" class="small material-icons modal-trigger">g_translate</i>
                 <div id="dvInputChat" contenteditable="true" placeholder="메세지 작성"></div>
-                <i id='iBtnAttach' >attach_file</i>
-                <i id='iBtnSend' >send</i>
+                <i id='iBtnAttach' class="small material-icons">attach_file</i>
+                <i id='iBtnSend' class="small material-icons">send</i>
                 <input type="file" id="attachFile" style="display:none;"/>
             </div>
         </div>
@@ -118,14 +118,50 @@
         </div>
       </div>
     </div>
-      <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
-      <!-- update the version number as needed -->
-      <script defer src="/__/firebase/4.6.1/firebase-app.js"></script>
-      <script defer src="/__/firebase/4.6.1/firebase-auth.js"></script>
-      <script defer src="/__/firebase/4.6.1/firebase-database.js"></script>
-      <script defer src="/__/firebase/4.6.1/firebase-storage.js"></script>
-      <script defer src="/__/firebase/init.js"></script>
+    <!-- template 영역 -->
+ <!-- template 유저리스트 영역-->
+ <script type="text/template" id="templateUserList">
+         <li id="li<%=targetUserUid %>" data-targetUserUid="<%=targetUserUid %>" data-username="<%=userName %>" class="collection-item avatar list">
+             <img src="<%=profileImg ? profileImg : 'img/noprofile.png'  %>" alt="" class="circle">
+             <span class="title"><%=userName %></span>
+             <span class="small material-icons right hiddendiv done">done</span>
+             <span class="small material-icons right hiddendiv mood red-text">favorite</span>
+         </li>
+ </script>
+ <!-- template 메세지리스트 영역 -->
+ <script type="text/template" id="templateMessageList">
+     <li id="li<%=key%>" class="collection-item avatar" data-key="<%=key%>">
+         <img src="<%=profileImg ? profileImg : 'img/noprofile.png'  %>" alt="" class="circle">
+         <span class="title"><%=userName %></span><span class="time"><%=time %></span>
+         <p><%=message %></p>
+     </li>
+ </script>
+ <!-- template 채팅방리스트 영역 -->
+ <script type="text/template" id="templateRoomList">
+     <li id="liRoom<%=roomId %>" data-roomId="<%=roomId %>" data-roomTitle='<%=roomTitle%>' data-roomUserName="<%=roomUserName%>"
+         data-roomType="<%=roomType%>" data-roomOneVSOneTarget="<%=roomOneVSOneTarget%>" data-roomUserlist="<%=roomUserlist %>" class="collection-item avatar" >
+         <img src="<%=profileImg ? profileImg : 'img/noprofile.png'  %>" alt="" class="circle">
+         <span class="title"><%=roomTitle%></span>
+         <p><%=lastMessage %></p>
+         <a href="#!" class="secondary-content"> <%=datetime %></a>
+     </li>
+ </script>
+   <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
+   <script type="text/javascript" src="js/materialize.min.js"></script>
+   <script type="text/javascript" src="js/underscore-min.js"></script>
+   <!-- update the version number as needed -->
+   <script defer src="/__/firebase/4.6.1/firebase-app.js"></script>
+   <script defer src="/__/firebase/4.6.1/firebase-auth.js"></script>
+   <script defer src="/__/firebase/4.6.1/firebase-database.js"></script>
+   <script defer src="/__/firebase/4.6.1/firebase-messaging.js"></script>
+   <script defer src="/__/firebase/4.6.1/firebase-storage.js"></script>
+   <script defer src="/__/firebase/init.js"></script>
       <script>
+
+        function FirebaseChat(){
+             this.init();
+             this.initEvent();
+         }
 
          /**
            * 초기 필드 변수 할당
@@ -146,16 +182,24 @@
           /**
            * 초기 이벤트 바인딩
            */
-          FirebaseChat.prototype.initEvent = function(){
-              this.liGoogleBtn.addEventListener('click', this.onGoogleBtnClick.bind(this));
-              this.auth.onAuthStateChanged(this.onAuthChange.bind(this));
-              this.liFacebookBtn.addEventListener('click', this.onFacebookBtnClick.bind(this));
-              this.liEmailJoin.addEventListener('click', this.displayEmailJoin.bind(this));
-              this.liEmailJoinSubmit.addEventListener('click', this.createEmailUser.bind(this));
-              this.liEmailBtn.addEventListener('click', this.onEmailBtnClick.bind(this));
-              this.liLogOut.addEventListener('click', this.logOut.bind(this));
-          }
+           FirebaseChat.prototype.initEvent = function(){
+               this.auth.onAuthStateChanged(this.onAuthChange.bind(this));
+               this.liEmailJoin.addEventListener('click', this.displayEmailJoin.bind(this));
+               this.liEmailJoinSubmit.addEventListener('click', this.createEmailUser.bind(this));
+               this.liEmailBtn.addEventListener('click', this.onEmailBtnClick.bind(this));
+               this.liLogOut.addEventListener('click', this.logOut.bind(this));
+               this.dvInputChat.addEventListener('keydown', this.onEnterKey.bind(this));
+               this.iBtnSend.addEventListener('click', this.saveMessages.bind(this));
+               this.dvInputChat.addEventListener("paste", this.onPaste.bind(this));
+               this.aBackBtn.addEventListener('click', this.onBackBtnClick.bind(this));
+               this.aConfirmInvite.addEventListener('click', this.onConfirmInviteClick.bind(this));
 
+               this.iBtnAttach.addEventListener('click', this.onBtnAttachClick.bind(this));
+               this.attachFile.addEventListener('change', this.onAttachFile.bind(this));
+
+               this.aConfirmTrans.addEventListener('click', this.onConfirmTransClick.bind(this))
+               this.getbackBtn.addEventListener('click', this.getback.bind(this))
+           }
           /**
            * 챗방 오픈 , 메세지 로드 및 AddUserList
            */

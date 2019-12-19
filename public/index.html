@@ -80,6 +80,22 @@
           </ul>
       </div>
     </div>
+    <div id="dvtrans" class="modal bottom-sheet">
+      <div class="modal-content">
+        <input id='country' disabled="disabled" type='text' value='select' style="font-size:40pt; color: #000000; font-weight:bold;"/>
+        <a id="getbackBtn" class="large material-icons modal-action modal-close waves-effect left waves-red grey white-text" style="font-size:40pt;">undo</a>
+        <a id="aConfirmTrans" class="large material-icons modal-action modal-close waves-effect right waves-red grey white-text"style="font-size:40pt;">translate</a>
+        <div class="carousel">
+            <a class="carousel-item" href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Flag_of_South_Korea.svg" class="scale" onclick="ko()" ></a>
+            <a class="carousel-item" href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg" class="scale" onclick="en()"></a>
+            <a class="carousel-item" href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/9/9e/Flag_of_Japan.svg" class="scale" onclick="ja()"></a>
+            <a class="carousel-item" href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg" class="scale" onclick="ch()"></a>
+            <a class="carousel-item" href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_France.svg" class="scale" onclick="fr()"></a>
+            <a class="carousel-item" href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Flag_of_Germany.svg" class="scale" onclick="de()"></a>
+            <a class="carousel-item" href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/2/21/Flag_of_Vietnam.svg" class="scale" onclick="vi()"></a>
+        </div>
+      </div>
+    </div>
       <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
       <!-- update the version number as needed -->
       <script defer src="/__/firebase/4.6.1/firebase-app.js"></script>
@@ -295,6 +311,122 @@
               this.dvLogin.style.display='none';
               this.dvJoin.style.display='block';
           }
+
+          /**
+           * 메세지 로드
+           */
+          FirebaseChat.prototype.loadMessageList = function(roomId){
+
+            if(roomId){
+                  this.ulMessageList.innerHTML = ''; //메세지 화면 리셋
+                  var messageTemplate = document.getElementById('templateMessageList').innerHTML;
+                  if(this.messageRef){  // 이전 메세지 ref 이벤트 제거
+                      this.messageRef.off();
+                  }
+                  this.messageRef = this.database.ref('Messages/' + roomId);
+                  var cbDisplayMessages = function(data) {
+                      var messageHtml = '';
+                      var val = data.val();
+                      messageHtml = _.template(messageTemplate)({
+                          key : data.key
+                          , profileImg : val.profileImg
+                          , userName : val.userName
+                          , time : FirebaseChat.timestampToTime(val.timestamp)
+                          , message : FirebaseChat.trans(val.message)
+                      });
+                      this.ulMessageList.innerHTML = this.ulMessageList.innerHTML + messageHtml;
+                      this.ulMessageList.scrollTop = this.ulMessageList.scrollHeight;
+                      this.roomTitle = val.roomTitle;
+                  }
+                  this.messageRef.limitToLast(50).on('child_added', cbDisplayMessages.bind(this));
+              }
+
+          }
+
+          /**
+           * 번역 확인, api키 입력
+           */
+
+          FirebaseChat.trans =function(message){
+            if(check==1){
+                if(message.indexOf("<a class=") == -1){ //업로드 메세지 예외처리
+                    if(message.indexOf("이 초대되었습니다.") == -1){ //초대 메세지 예외처리
+                        return translate(lang, message);
+                    }
+                    return message.replace("이 초대되었습니다", translate(lang, "이 초대되었습니다"));
+                }
+                message = message.replace("다운로드", translate(lang, "다운로드"));
+                return message.replace("파일명", translate(lang, "파일명"));
+            }
+             return message;
+          }
+
+          function translate(strTargetLang, strSourceText)
+          {
+              var translatedMessage;
+              var strApiKey = 'APIKEY';
+            var url = "https://translation.googleapis.com/language/translate/v2?key=" + strApiKey;
+            url += "&target=" + strTargetLang;
+            url += "&q=" + strSourceText;
+            $.ajax({
+                url : url,
+                type: "GET",
+                async: false,
+                success: function (data, status) {
+                    translatedMessage =  data.data.translations[0].translatedText;
+                }
+            });
+            return translatedMessage;
+          }
+          /**
+           * 현재날짜 yyyyMMddHHmmsss형태로 반환
+           */
+          FirebaseChat.yyyyMMddHHmmsss =function(){
+              var vDate = new Date();
+              var yyyy = vDate.getFullYear().toString();
+              var MM = (vDate.getMonth() + 1).toString();
+              var dd = vDate.getDate().toString();
+              var HH = vDate.getHours().toString();
+              var mm = vDate.getMinutes().toString();
+
+              var ss = vDate.getSeconds().toString();
+              var sss= vDate.getMilliseconds().toString();
+              return yyyy + (MM[1] ? MM : '0'+MM[0]) + (dd[1] ? dd : '0'+dd[0]) + (HH[1] ? HH : '0'+ HH[0])
+                  + (mm[1] ? mm : '0'+ mm[0]) + (ss[1] ? ss : '0'+ss[0])+ sss;
+          };
+
+          /**
+           * timestamp를 날짜 시간 으로 변환
+           */
+          FirebaseChat.timestampToTime = function(timestamp){
+              var date = new Date(timestamp),
+                  year = date.getFullYear(),
+                  month = date.getMonth()+1,
+                  day = date.getDate(),
+                  hour = date.getHours(),
+                  minute = date.getMinutes(),
+                  week = new Array('일', '월', '화', '수', '목', '금', '토');
+
+              var convertDate = year + "년 "+month+"월 "+ day +"일 ("+ week[date.getDay()] +") ";
+              var convertHour="";
+              if(hour < 12){
+                  convertHour = "오전 " + FirebaseChat.pad(hour) +":" + FirebaseChat.pad(minute);
+              }else if(hour === 12){
+                  convertHour = "오후 " + FirebaseChat.pad(hour) +":" + FirebaseChat.pad(minute);
+              }else{
+                  convertHour = "오후 " + FirebaseChat.pad(hour - 12) +":" + FirebaseChat.pad(minute);
+              }
+
+              return convertDate + convertHour;
+          }
+
+          /**
+           *  10미만 숫자 앞에 0 붙이기
+           */
+          FirebaseChat.pad = function(n){
+              return n > 9 ? "" + n: "0" + n;
+          }
+
           /**
            * Dom 로딩 후 동작
            */
@@ -306,6 +438,10 @@
               $('#dnModal').modal();
               //채팅방 초대 modal 설정
               $('#dvAddUser').modal();
+              //번역 설정
+              $('#dvtrans').modal();
+
+              $('.carousel').carousel();
           });
       </script>
   </body>

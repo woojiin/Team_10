@@ -135,6 +135,45 @@
           }
 
           /**
+           * 챗방 오픈 , 메세지 로드 및 AddUserList
+           */
+          FirebaseChat.prototype.openChatRoom = function(roomId, roomTitle){ // 파라미터 추가
+              this.isOpenRoom = true; // 방이 열린 상태인지 확인하는 플래그 값
+              if(roomTitle){  //상단 타이틀 변경
+                  this.spTitle.innerHTML = this.roomTitle;
+              }
+              this.loadMessageList(roomId); //메세지 로드
+              this.tabMessageList.click();
+              this.setAddUserList();
+          }
+
+          /**
+           * 유저 초대 팝업 모달 창 셋팅
+           */
+          FirebaseChat.prototype.setAddUserList = function(){
+            this.ulAddUserList.innerHTML =  this.ulUserList.innerHTML
+            var arrAddUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByTagName('li'));
+            var cbArrayForEach = function(item){
+                var itemUserUid = item.getAttribute('data-targetUserUid');
+                if(this.roomUserlist.indexOf(itemUserUid) === -1){
+                    item.getElementsByClassName('done')[0].classList.remove('hiddendiv');
+                    item.addEventListener('click',function(){
+                        if(Array.prototype.slice.call(this.classList).indexOf('blue-text') == -1){
+                            this.classList.add('blue-text');
+                        }else{
+                            this.classList.remove('blue-text');
+                        }
+                    });
+                }else{
+                    item.parentNode.removeChild(item);
+                }
+
+            }
+            arrAddUserList.forEach(cbArrayForEach.bind(this));
+          }
+
+
+          /**
            * 로그아웃
            */
           FirebaseChat.prototype.logOut = function(){
@@ -167,6 +206,23 @@
               this.database.goOnline(); // 데이터베이스를 명시적으로 온라인
               this.dvAuth.style.display = 'none';
           }
+          /**
+       * 온라인 여부 체크 하기 위한 데이터 입력
+       */
+      FirebaseChat.prototype.checkOnline = function(){
+          var userUid = this.auth.currentUser.uid;
+          var myConnectionsRef = this.database.ref('UsersConnection/'+userUid+'/connection');
+          var lastOnlineRef = this.database.ref('UsersConnection/'+userUid+'/lastOnline');
+          var connectedRef = this.database.ref('.info/connected');
+          connectedRef.on('value', function(snap) {
+              if (snap.val() === true) {
+                  myConnectionsRef.set(true);
+                  // 연결 단절 이벤트
+                  myConnectionsRef.onDisconnect().set(false);
+                  lastOnlineRef.onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+              }
+          });
+      }
 
           /**
            * 로그아웃 되어 onAuthStateChange 에 감지 된 후 동작
@@ -212,6 +268,54 @@
                   }
                   this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
                       .then(cbSignInEmail.bind(this));
+              }
+          }
+
+          /**
+           * User데이터를 IndexedDB에 저장 및 데이터 변경
+           */
+          FirebaseChat.prototype.saveUserAtIndexedDB = function(user, userName, isSave){
+              if(indexedDB){
+                  var request = indexedDB.open(this.INDEXDB_DB_NAME , this.INDEXDB_VERSION); // 데이터베이스 접근 요청
+                  var objectName = this.INDEXDB_STORE
+                  request.onupgradeneeded = function(){  // 데이터 베이스 생성 또는 버전 업그레이드 시 수행
+                      var db = request.result; //데이터 베이스 객체
+                      var store  = db.createObjectStore(objectName, {keyPath :"uid"}); // 테이블에 해당하는 Object 생성 및 키값 설정
+                  }
+                  request.onsuccess = function() {  // 데이터베이스 접근 요청이 성공 시
+                      var db = request.result;
+                      var tx = db.transaction(objectName, "readwrite"); //읽기쓰기 권한으로 트랜잭션을 얻음
+                      var store = tx.objectStore(objectName);
+
+                      store.get(user.uid).onsuccess = function(event){  //user.uid 기준으로 IndexedDB 데이터를 읽어온다
+                          var data = event.target.result;
+                          console.log('IndexedDB query 결과 : ', data);
+                          console.log('saveUserAtIndexedDB isSave 파라미터', isSave);
+                          if(!data){  //데이터가 없으면 저장
+                              store.put({
+                                  uid: user.uid
+                                  , email: user.email
+                                  , photoURL : user.photoURL ? user.photoURL : ''
+                                  , displayName : userName ? userName : user.displayName
+                                  , isSave : false
+                              });
+                          }
+
+                          if(data && isSave){  // 데이터가 존재하고 isSave 파라미터 true이면 데이터를 업데이트
+                              store.put({
+                                  uid: user.uid
+                                  , email: user.email
+                                  , photoURL : user.photoURL ? user.photoURL : ''
+                                  , displayName : userName ? userName : user.displayName
+                                  , isSave : true
+                              });
+                          }
+                      }
+                      tx.oncomplete = function() {
+                          console.log('IndexedDB 트랜잭션 완료')
+                          db.close();
+                      };
+                  }
               }
           }
 

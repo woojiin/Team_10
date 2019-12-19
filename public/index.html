@@ -234,6 +234,50 @@
               this.getbackBtn.addEventListener('click', this.getback.bind(this))
           }
 
+          /**
+           *  첨부파일 버튼 클릭
+           */
+          FirebaseChat.prototype.onBtnAttachClick = function(){
+              this.attachFile.click();
+          }
+
+          /**
+           * 첨부파일 전송
+           */
+          FirebaseChat.prototype.onAttachFile = function(event){
+
+              $('#dnModal').modal('open');
+              var files = event.target.files;
+              var filesLength = files.length;
+              var progressBar = document.getElementById('dvProgressBar');
+              var fileName = files[0].name;
+              var path = FirebaseChat.yyyyMMddHHmmsss().substr(0, 8) +'/'+this.roomId + '/' + this.auth.currentUser.uid + '/' + fileName;
+              var uploadTask = firebase.storage().ref().child(path).put(files[0]);
+
+              var cbProgress = function(snapshot){ // 진행 과정
+                  var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                  progressBar.style.width = progress+'%';
+              }
+
+              var cbError = function(error) { // 에러발생
+                  console.log(error);
+                  $('#dnModal').modal('close');
+                  alert('업로드 중 에러가 발생하였습니다.');
+              }
+              var cbComplete = function() { // 완료
+                  //프로그레스바 닫기
+                  $('#dnModal').modal('close');
+
+                  //완료 다운로드 링크 메세지 보내기
+                  this.saveMessages(null, uploadTask.snapshot.downloadURL, fileName);
+
+                  //files 리셋
+                  event.target.value='';
+              }
+
+//프로그레스바
+              uploadTask.on('state_changed', cbProgress.bind(this) , cbError.bind(this), cbComplete.bind(this));
+          }
 
           /**
            * 메세지 전송
@@ -365,6 +409,18 @@
 
             }
             arrAddUserList.forEach(cbArrayForEach.bind(this));
+          }
+
+          /**
+           * 백버튼 클릭
+           */
+          FirebaseChat.prototype.onBackBtnClick = function(){
+              this.isOpenRoom = false;
+              this.aBackBtn.classList.add('hiddendiv');
+              this.aInvite.classList.add('hiddendiv');
+              document.getElementById(this.roomFlag).click();
+              this.spTitle.innerText = this.ORIGIN_TITLE;
+              this.ulMessageList.innerHTML='';
           }
 
 

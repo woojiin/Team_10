@@ -7,10 +7,12 @@
   </head>
   <body>
     <!-- header Top 영역 -->
-    <header >
+    <header class="navbar-fixed">
         <nav>
-            <div >
-                <span id="spTitle" >team10-chat</span>
+            <div class="nav-wrapper valign-wrapper">
+                <a href="#" id="aBackBtn" class="small material-icons left hiddendiv">arrow_back</a>
+                <span id="spTitle" class="brand-logo center">team10-chat</span>
+                <a href="#dvAddUser" id="aInvite" class="small material-icons hiddendiv modal-trigger">add</a>
             </div>
         </nav>
     </header>
@@ -80,6 +82,26 @@
           </ul>
       </div>
     </div>
+    <!-- Modal 영역 -->
+    <div id="dnModal" class="modal col s4">
+        <div class="modal-content">
+            <h5>업로드</h5>
+            <div class="progress">
+                <div id="dvProgressBar" class="determinate"></div>
+                <div id="dvFileName"></div>
+            </div>
+        </div>
+    </div>
+    <div id="dvAddUser" class="modal">
+        <div class="modal-content">
+          <h5>초대</h5>
+          <ul id="ulAddUserList" class="collection">
+          </ul>
+        </div>
+        <div class="modal-footer">
+            <a id="aConfirmInvite" href="#!" class="material-icons modal-action modal-close waves-effect waves-green btn red white-text">추가</a>
+        </div>
+    </div>
     <div id="dvtrans" class="modal bottom-sheet">
       <div class="modal-content">
         <input id='country' disabled="disabled" type='text' value='select' style="font-size:40pt; color: #000000; font-weight:bold;"/>
@@ -146,6 +168,30 @@
               this.tabMessageList.click();
               this.setAddUserList();
           }
+          /**
+          * 초대
+          */
+         FirebaseChat.prototype.onConfirmInviteClick = function(){
+             var arrInviteUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByClassName('blue-text'));
+             var arrInviteUserListLength = arrInviteUserList.length;
+             var arrInviteUserName = [];
+             var updates = {};
+             for(var i=0; i < arrInviteUserListLength; i++){
+                 var inviteUserUid = arrInviteUserList[i].getAttribute('data-targetUserUid');
+                 var inviteUserName = arrInviteUserList[i].getAttribute('data-username') + '님';
+                 updates['RoomUsers/'+ this.roomId +'/'+ inviteUserUid] = true;
+                 arrInviteUserList[i].outerHTML = '';
+                 this.roomUserlist.push(inviteUserUid);
+                 this.roomUserName.push(inviteUserName);
+                 arrInviteUserName.push(inviteUserName);
+             }
+             this.roomUserlist.sort();
+             this.database.ref().update(updates);
+
+             //초대 메세지
+             this.saveMessages(arrInviteUserName.join() + '이 초대되었습니다.');
+         }
+
 
           /**
            * 유저 초대 팝업 모달 창 셋팅
